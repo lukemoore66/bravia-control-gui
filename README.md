@@ -28,7 +28,7 @@ requirements.txt:
 Using a python virtual environment is highly recommended.
 
 ## The Interface
-Begin by selecting a TV from the Available TV's dropdown. If the web page does not appear, it is likely that no TVs were detect, and you may want to manually define them in `tvs.txt`.
+Begin by selecting a TV from the Available TV's dropdown. If the web page does not appear, it is likely that no TVs were detected, and you may want to manually define them in `tvs.txt`.
 
 Enter a pre-shared key to authenticate access to the current TV.
 
