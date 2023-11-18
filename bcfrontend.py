@@ -121,6 +121,7 @@ class FrontendGUI:
 
     def set_tvs_dropdown(self, tvs_index):
         self.tvs_index = tvs_index
+        if self.tvs_index is None: return self.refresh_interface()
         self.tv = self.tvs[self.tvs_index]
         if self.tv['psk'] is not None: self.psk = self.tv['psk']
         self.client = RESTClient(self.tv['ip'], psk=self.psk)
