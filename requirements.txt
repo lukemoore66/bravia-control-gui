@@ -1,0 +1,3 @@
+setuptools
+gradio>=4.3.0
+ssdpy
