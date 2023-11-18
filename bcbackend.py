@@ -70,6 +70,7 @@ def get_ip_and_psk():
             try: ip = ip_address(ip)
             except: continue
             psk = psk[0] if psk else None
+            psk = psk.strip('\n')
             tv_list.append({'ip': ip, 'psk': psk})
     return tv_list
 
