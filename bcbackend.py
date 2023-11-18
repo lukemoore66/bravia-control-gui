@@ -74,7 +74,7 @@ def get_ip_and_psk():
     return tv_list
 
 def get_tvs(tv_list=[]):
-    print('\nScanning for TVs. Please Wait...')
+    print('\nDiscovering TVs. Please Wait...')
     futures_list = []
     if not tv_list:
         client = SSDPClient()

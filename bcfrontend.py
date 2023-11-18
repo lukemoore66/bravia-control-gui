@@ -129,11 +129,11 @@ class FrontendGUI:
         return self.refresh_interface()
     
     def get_auth_textbox(self):
-        value = 'Authorized' if self.auth_status else 'Unauthorized'
-        return gr.Textbox(label='Authorization Status', value=value, interactive=False)
+        value = 'Authenticated' if self.auth_status else 'Not Authenticated'
+        return gr.Textbox(label='Authentication Status', value=value, interactive=False)
 
     def get_psk_textbox(self):
-        return gr.Textbox(label='Pre-Shared Key', value=self.psk, interactive=True)
+        return gr.Textbox(label='Pre-Shared Key', value=self.psk, type='password', interactive=True)
     
     def set_psk_textbox(self, psk):
         self.psk = psk
