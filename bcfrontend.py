@@ -132,7 +132,8 @@ class FrontendGUI:
         return self.refresh_interface()
     
     def get_auth_textbox(self):
-        value = 'Authenticated' if self.auth_status else 'Not Authenticated'
+        value = 'N/A'
+        if self.tv: value = 'Passed' if self.auth_status else 'Failed'
         return gr.Textbox(label='Authentication Status', value=value, interactive=False)
 
     def get_psk_textbox(self):
@@ -153,7 +154,7 @@ class FrontendGUI:
         set_request = RESTRequest('system', 'setPowerStatus', params={'status': not status})
         _ = self.client.send_request(set_request)
         sleep(5.0)
-        self.power_status = status
+        self.power_status = get_power_status(self.client)
         return self.refresh_interface()
 
     def get_power_textbox(self):
@@ -165,12 +166,12 @@ class FrontendGUI:
         return gr.Textbox(value=value, label='Current Power State', interactive=False)
     
     def get_inputs_dropdown(self):
-        if not self.tv:
+        if not self.tv or not self.power_status:
             choices = ['No TV Selected.']
             value = choices[0]
             interactive = False
         else:
-            inputs_request = RESTRequest('avContent', 'getCurrentExternalInputsStatus', ver=1.1)
+            inputs_request = RESTRequest('avContent', 'getCurrentExternalInputsStatus', ver=1.0)
             inputs_response = self.client.send_request(inputs_request)
             self.inputs = get_inputs(inputs_response)
             choices = [f'{item["index"]} : {item["title"]} : {item["label"]}' for item in self.inputs]
@@ -204,7 +205,7 @@ class FrontendGUI:
             value = 'No External Input Detected'
             input_request = RESTRequest('avContent', 'getPlayingContentInfo')
             input_response = self.client.send_request(input_request)
-            inputs_request = RESTRequest('avContent', 'getCurrentExternalInputsStatus', ver=1.1)
+            inputs_request = RESTRequest('avContent', 'getCurrentExternalInputsStatus', ver=1.0)
             inputs_response = self.client.send_request(inputs_request)
             input = get_input(input_response, inputs_response)
             if input: value = f'{input["index"]} : {input["title"]} : {input["label"]}'
@@ -264,10 +265,10 @@ class FrontendGUI:
             params = {
                 'target': self.volume_status['target'],
                 'volume': str(volume),
-                'ui': None
+                #'ui': None
             }
             while self.volume_status['volume'] != volume:
-                request = RESTRequest('audio', 'setAudioVolume', params=params, ver=1.2)
+                request = RESTRequest('audio', 'setAudioVolume', params=params, ver=1.0)
                 _ = self.client.send_request(request)
                 sleep(1.0)
                 self.volume_status = self.set_volume_status()
@@ -316,7 +317,7 @@ class FrontendGUI:
     def get_app_gallery(self):
         value = None
         self.apps = None
-        if self.auth_status:
+        if self.auth_status and self.power_status:
             self.apps = get_apps(self.client)
             value = [(item['cached_icon_path'], item['title']) for item in self.apps]
         return gr.Gallery(value=value, label='Apps', allow_preview=False,
@@ -326,11 +327,11 @@ class FrontendGUI:
         self.app_index = evt.index
     
     def get_app_launch_button(self):
-        interactive = self.auth_status and bool(self.apps)
+        interactive = self.auth_status and bool(self.power_status) and bool(self.apps)
         return gr.Button(value='Launch Selected App', interactive=interactive)
     
     def get_app_terminate_button(self):
-        interactive = self.auth_status
+        interactive = self.auth_status and bool(self.power_status)
         return gr.Button(value='Terminate All Apps', interactive=interactive)
     
     def set_app_launch_button(self):
