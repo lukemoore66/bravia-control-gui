@@ -36,6 +36,8 @@ Enter a pre-shared key to authenticate access to the current TV.
 - Available TVs: A dropdown for selecting BRAVIA TVs that can potentially be controlled.
 - Authentication Status: Displays if access is authenticated.
 - Pre-Shared Key: Enter the pre-shared key needed for authentication to pass.
+- Access ID: The current ID being used to access the API.
+- Refresh: Refreshes info for the currently selected TV.
 - Toggle Power: Changes the power state.
 - Current Power State: Displays the power state.
 - Inputs: A dropdown for selecting the input to be set.
@@ -56,5 +58,4 @@ Enter a pre-shared key to authenticate access to the current TV.
 - Why are some options unavailable when I select a TV? Most controls are only available if you have authentication. Please see [here](https://pro-bravia.sony.net/develop/integrate/ip-control/index.html) for information on configuring authentication. Input and Audio controls are also unavailable if the currently selected TV is in `Standby` mode.
 - Are my credentials stored safely? No. They are stored in plaintext if you use `tvs.txt`. All pre-shared keys are not stored in encrypted memory while this program is running.
 - Can I control multiple TVs at once? No. You can only control one TV at a time. Controlling multiple TVs is not the intended purpose of this program.
-- Can I change access IDs? No, not yet. Access IDs will be added in the future.
 - Can I change API method versions? No. All of the current GUI features depend only on version 1.0 for all API methods implemented thus far.

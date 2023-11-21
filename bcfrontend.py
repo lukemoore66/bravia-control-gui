@@ -11,6 +11,7 @@ class FrontendGUI:
         self.client = None
         self.auth_status = None
         self._psk = None
+        self.id = 1
         self.inputs = None
         self.input = None
         self.power_status = None
@@ -20,6 +21,8 @@ class FrontendGUI:
 
         self.tvs_dropdown = None
         self.psk_textbox = None
+        self.id_textbox = None
+        self.refresh_button = None
         self.power_button = None
         self.power_textbox = None
         self.inputs_dropdown = None
@@ -46,11 +49,13 @@ class FrontendGUI:
             github_link_1 = '[Bravia Control GitHub]'
             github_link_2 = '()'
             gr.Markdown(f'{heading}\n{bravia_link_1}{bravia_link_2} {github_link_1}{github_link_2}')
+            
             with gr.Row():
-                with gr.Row():
-                    self.tvs_dropdown = self.get_tvs_dropdown()
-                    self.auth_textbox = self.get_auth_textbox()
+                self.tvs_dropdown = self.get_tvs_dropdown()
+                self.auth_textbox = self.get_auth_textbox()
                 self.psk_textbox = self.get_psk_textbox()
+                self.id_textbox = self.get_id_textbox()
+                self.refresh_button = self.get_refresh_button()
 
             with gr.Row():
                 self.power_button = self.get_power_button()
@@ -74,14 +79,16 @@ class FrontendGUI:
                 self.app_launch_button = self.get_app_launch_button()
                 self.app_terminate_button = self.get_app_terminate_button()
 
-            self.components = [self.auth_textbox, self.psk_textbox, self.power_button, self.power_textbox,
-                               self.inputs_dropdown, self.input_button, self.input_textbox, self.volume_dropdown,
-                               self.volume_slider, self.volume_button, self.volume_textbox, self.mute_checkbox,
-                               self.app_gallery, self.app_launch_button, self.app_terminate_button]
+            self.components = [self.auth_textbox, self.psk_textbox, self.id_textbox, self.power_button,
+                               self.power_textbox, self.inputs_dropdown, self.input_button, self.input_textbox,
+                               self.volume_dropdown, self.volume_slider, self.volume_button, self.volume_textbox,
+                               self.mute_checkbox, self.app_gallery, self.app_launch_button, self.app_terminate_button]
 
             self.psk_textbox.submit(self.set_psk_textbox, inputs=self.psk_textbox,
                                     outputs=[self.tvs_dropdown] + self.components)
             self.tvs_dropdown.change(self.set_tvs_dropdown, inputs=self.tvs_dropdown, outputs=self.components)
+            self.id_textbox.submit(self.set_id_textbox, inputs=self.id_textbox, outputs=self.id_textbox)
+            self.refresh_button.click(self.set_refresh_button, outputs=self.components)
             self.power_button.click(self.set_power_button, outputs=self.components)
             self.input_button.click(self.set_input_button, inputs=self.inputs_dropdown,
                                     outputs=[self.inputs_dropdown, self.input_textbox])
@@ -113,11 +120,12 @@ class FrontendGUI:
                            interactive=True, scale=2)
     
     def refresh_interface(self):
-        return [self.get_auth_textbox(), self.get_psk_textbox(), self.get_power_button(),
-                self.get_power_textbox(), self.get_inputs_dropdown(), self.get_input_button(),
-                self.get_input_textbox(), self.get_volume_dropdown(), self.get_volume_slider(),
-                self.get_volume_button(), self.get_volume_textbox(), self.get_mute_checkbox(),
-                self.get_app_gallery(), self.get_app_launch_button(), self.get_app_terminate_button()]
+        return [self.get_auth_textbox(), self.get_psk_textbox(), self.get_id_textbox(),
+                self.get_power_button(), self.get_power_textbox(), self.get_inputs_dropdown(),
+                self.get_input_button(), self.get_input_textbox(), self.get_volume_dropdown(),
+                self.get_volume_slider(), self.get_volume_button(), self.get_volume_textbox(),
+                self.get_mute_checkbox(), self.get_app_gallery(), self.get_app_launch_button(),
+                self.get_app_terminate_button()]
 
     def set_tvs_dropdown(self, tvs_index):
         self.tvs_index = tvs_index
@@ -135,9 +143,28 @@ class FrontendGUI:
         value = 'N/A'
         if self.tv: value = 'Passed' if self.auth_status else 'Failed'
         return gr.Textbox(label='Authentication Status', value=value, interactive=False)
+    
+    def get_id_textbox(self):
+            value = 1
+            if self.id: value = self.id
+            return gr.Textbox(label='Access ID', value=value, interactive=True)
+
+    def set_id_textbox(self, id):
+        try: id = int(id)
+        except: id = 1
+        if id <= 0: id = 1
+        self.id = id
+        return gr.Textbox(label='Access ID', value=id, interactive=True)
+
+    def get_refresh_button(self):
+        return gr.Button(value='Refresh', interactive=True)
+
+    def set_refresh_button(self):
+        return self.refresh_interface()
 
     def get_psk_textbox(self):
-        return gr.Textbox(label='Pre-Shared Key', value=self.psk, type='password', interactive=True)
+        return gr.Textbox(label='Pre-Shared Key', value=self.psk, type='password',
+                           interactive=True)
     
     def set_psk_textbox(self, psk):
         self.psk = psk
@@ -151,7 +178,7 @@ class FrontendGUI:
 
     def set_power_button(self):
         status = get_power_status(self.client)
-        set_request = RESTRequest('system', 'setPowerStatus', params={'status': not status})
+        set_request = RESTRequest('system', 'setPowerStatus', params={'status': not status}, id=self.id)
         _ = self.client.send_request(set_request)
         sleep(5.0)
         self.power_status = get_power_status(self.client)
@@ -171,12 +198,12 @@ class FrontendGUI:
             value = choices[0]
             interactive = False
         else:
-            inputs_request = RESTRequest('avContent', 'getCurrentExternalInputsStatus', ver=1.0)
+            inputs_request = RESTRequest('avContent', 'getCurrentExternalInputsStatus', ver=1.0, id=self.id)
             inputs_response = self.client.send_request(inputs_request)
             self.inputs = get_inputs(inputs_response)
             choices = [f'{item["index"]} : {item["title"]} : {item["label"]}' for item in self.inputs]
             value = choices[0]
-            input_request = RESTRequest('avContent', 'getPlayingContentInfo')
+            input_request = RESTRequest('avContent', 'getPlayingContentInfo', id=self.id)
             input_response = self.client.send_request(input_request)
             input = get_input(input_response, inputs_response)
             if input: value = f'{input["index"]} : {input["title"]} : {input["label"]}'
@@ -190,7 +217,7 @@ class FrontendGUI:
 
     def set_input_button(self, input_index):
         uri = self.inputs[input_index]['uri']
-        set_request = RESTRequest('avContent', 'setPlayContent', params={'uri': uri})
+        set_request = RESTRequest('avContent', 'setPlayContent', params={'uri': uri}, id=self.id)
         _ = self.client.send_request(set_request)
         sleep(5.0)
         self.input = self.inputs[input_index]
@@ -203,9 +230,9 @@ class FrontendGUI:
             value = 'No TV Selected or Unauthorized'
         else:
             value = 'No External Input Detected'
-            input_request = RESTRequest('avContent', 'getPlayingContentInfo')
+            input_request = RESTRequest('avContent', 'getPlayingContentInfo', id=self.id)
             input_response = self.client.send_request(input_request)
-            inputs_request = RESTRequest('avContent', 'getCurrentExternalInputsStatus', ver=1.0)
+            inputs_request = RESTRequest('avContent', 'getCurrentExternalInputsStatus', ver=1.0, id=self.id)
             inputs_response = self.client.send_request(inputs_request)
             input = get_input(input_response, inputs_response)
             if input: value = f'{input["index"]} : {input["title"]} : {input["label"]}'
@@ -215,7 +242,7 @@ class FrontendGUI:
         choices = ['No Target(s) Available']
         interactive = False
         if self.auth_status:
-            request = RESTRequest('audio', 'getVolumeInformation')
+            request = RESTRequest('audio', 'getVolumeInformation', id=self.id)
             response = self.client.send_request(request)
             result = response.data.get('result')
             if result:
@@ -226,7 +253,7 @@ class FrontendGUI:
                            interactive=interactive, type='index')
     
     def set_volume_dropdown(self, volume_index):
-        request = RESTRequest('audio', 'getVolumeInformation')
+        request = RESTRequest('audio', 'getVolumeInformation', id=self.id)
         response = self.client.send_request(request)
         self.volume_index = None
         self.volume_status = None
@@ -268,7 +295,7 @@ class FrontendGUI:
                 #'ui': None
             }
             while self.volume_status['volume'] != volume:
-                request = RESTRequest('audio', 'setAudioVolume', params=params, ver=1.0)
+                request = RESTRequest('audio', 'setAudioVolume', params=params, ver=1.0, id=self.id)
                 _ = self.client.send_request(request)
                 sleep(1.0)
                 self.volume_status = self.set_volume_status()
@@ -297,7 +324,7 @@ class FrontendGUI:
     def set_mute_checkbox(self, mute):
         interactive = self.auth_status and bool(self.volume_status)
         if interactive:
-            request = RESTRequest('audio', 'setAudioMute', params={'status': mute})
+            request = RESTRequest('audio', 'setAudioMute', params={'status': mute}, id=self.id)
             _ = self.client.send_request(request)
             self.volume_status = self.set_volume_status()
             if self.volume_status:
@@ -306,7 +333,7 @@ class FrontendGUI:
                            interactive=interactive)
     
     def set_volume_status(self):
-        request = RESTRequest('audio', 'getVolumeInformation')
+        request = RESTRequest('audio', 'getVolumeInformation', id=self.id)
         response = self.client.send_request(request)
         if response.data.get('result'):
             result = response.data['result'][0]
@@ -337,9 +364,9 @@ class FrontendGUI:
     def set_app_launch_button(self):
         if self.app_index is not None:
             app_uri = self.apps[self.app_index]['uri']
-            request = RESTRequest('appControl', 'setActiveApp', params={'uri': app_uri})
+            request = RESTRequest('appControl', 'setActiveApp', params={'uri': app_uri}, id=self.id)
             _ = self.client.send_request(request)
     
     def set_app_terminate_button(self):
-        request = RESTRequest('appControl', 'terminateApps')
+        request = RESTRequest('appControl', 'terminateApps', id=self.id)
         _ = self.client.send_request(request)
